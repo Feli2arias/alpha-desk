@@ -1,0 +1,254 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+@import 'tailwindcss';
+
+/* ---------------------------------------------------------------------------
+   Design tokens — "terminal fintech"
+   Toda la UI referencia estos tokens. Cero valores hardcodeados en componentes.
+   --------------------------------------------------------------------------- */
+@theme {
+  /* Superficies: negro cálido, no gris azulado genérico */
+  --color-base-950: oklch(0.145 0.006 285);
+  --color-base-900: oklch(0.178 0.007 285);
+  --color-base-850: oklch(0.205 0.008 285);
+  --color-base-800: oklch(0.243 0.009 285);
+  --color-base-700: oklch(0.312 0.010 285);
+  --color-base-600: oklch(0.432 0.011 285);
+  --color-base-500: oklch(0.556 0.012 285);
+  --color-base-400: oklch(0.665 0.012 285);
+  --color-base-300: oklch(0.782 0.010 285);
+  --color-base-200: oklch(0.873 0.007 285);
+  --color-base-100: oklch(0.943 0.004 285);
+
+  /* Acento IA — violeta eléctrico, reservado a elementos de agente */
+  --color-ai-600: oklch(0.545 0.235 295);
+  --color-ai-500: oklch(0.638 0.222 296);
+  --color-ai-400: oklch(0.715 0.180 298);
+  --color-ai-300: oklch(0.810 0.120 300);
+
+  /* P&L — verde/rojo usados SOLO para performance */
+  --color-gain-500: oklch(0.760 0.185 155);
+  --color-gain-600: oklch(0.665 0.170 155);
+  --color-loss-500: oklch(0.680 0.210 22);
+  --color-loss-600: oklch(0.595 0.205 22);
+  --color-warn-500: oklch(0.800 0.155 82);
+
+  /* Aliases semánticos */
+  --color-bg: var(--color-base-950);
+  --color-surface: var(--color-base-900);
+  --color-surface-raised: var(--color-base-850);
+  --color-border: var(--color-base-800);
+  --color-border-strong: var(--color-base-700);
+  --color-fg: var(--color-base-100);
+  --color-fg-muted: var(--color-base-400);
+  --color-fg-subtle: var(--color-base-500);
+
+  /* Tipografía */
+  --font-sans: 'Space Grotesk', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
+
+  --text-display: 2.75rem;
+  --text-display--line-height: 1.05;
+  --text-display--letter-spacing: -0.03em;
+  --text-h1: 1.75rem;
+  --text-h1--line-height: 1.15;
+  --text-h1--letter-spacing: -0.02em;
+  --text-h2: 1.25rem;
+  --text-h2--line-height: 1.25;
+  --text-h2--letter-spacing: -0.015em;
+  --text-h3: 1rem;
+  --text-h3--line-height: 1.35;
+  --text-body: 0.9375rem;
+  --text-body--line-height: 1.65;
+  --text-sm: 0.8125rem;
+  --text-sm--line-height: 1.5;
+  --text-caption: 0.6875rem;
+  --text-caption--line-height: 1.4;
+  --text-caption--letter-spacing: 0.08em;
+
+  /* Radios — chicos, look terminal */
+  --radius-sm: 0.25rem;
+  --radius-md: 0.375rem;
+  --radius-lg: 0.625rem;
+  --radius-xl: 0.875rem;
+
+  /* Elevación */
+  --shadow-sm: 0 1px 2px oklch(0 0 0 / 0.4);
+  --shadow-md: 0 4px 12px oklch(0 0 0 / 0.45);
+  --shadow-lg: 0 12px 32px -8px oklch(0 0 0 / 0.6);
+  --shadow-glow-ai: 0 0 0 1px oklch(0.638 0.222 296 / 0.35), 0 8px 28px -12px oklch(0.638 0.222 296 / 0.55);
+
+  /* Motion */
+  --duration-instant: 100ms;
+  --duration-fast: 180ms;
+  --duration-base: 280ms;
+  --duration-slow: 480ms;
+  --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in-soft: cubic-bezier(0.55, 0, 1, 0.45);
+
+  /* Layout */
+  --spacing-sidebar: 15rem;
+}
+
+@layer base {
+  :root {
+    color-scheme: dark;
+  }
+
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    background-color: var(--color-bg);
+    color: var(--color-fg);
+    font-family: var(--font-sans);
+    font-size: var(--text-body);
+    overscroll-behavior-y: none;
+  }
+
+  /* Todos los números de mercado en mono con cifras tabulares */
+  .num {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: 'tnum';
+    letter-spacing: -0.01em;
+  }
+
+  ::selection {
+    background: var(--color-ai-500);
+    color: var(--color-base-950);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-ai-400);
+    outline-offset: 2px;
+    border-radius: var(--radius-sm);
+  }
+
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--color-base-800);
+    border-radius: var(--radius-lg);
+    border: 3px solid var(--color-bg);
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--color-base-700);
+  }
+}
+
+/* Tailwind v4 no expone un namespace `--duration-*`, así que las duraciones
+   se publican como utilidades propias para que los componentes nunca
+   hardcodeen milisegundos. */
+@utility duration-instant {
+  transition-duration: var(--duration-instant);
+}
+@utility duration-fast {
+  transition-duration: var(--duration-fast);
+}
+@utility duration-base {
+  transition-duration: var(--duration-base);
+}
+@utility duration-slow {
+  transition-duration: var(--duration-slow);
+}
+
+@layer utilities {
+  /* Grilla técnica de fondo — detalle de terminal */
+  .bg-grid {
+    background-image:
+      linear-gradient(to right, var(--color-base-900) 1px, transparent 1px),
+      linear-gradient(to bottom, var(--color-base-900) 1px, transparent 1px);
+    background-size: 48px 48px;
+  }
+
+  .mask-fade-b {
+    mask-image: linear-gradient(to bottom, black 55%, transparent 100%);
+  }
+}
+
+/* Animaciones — solo transform y opacity */
+@keyframes shipui-rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes shipui-pulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.45;
+    transform: scale(0.82);
+  }
+}
+
+@keyframes shipui-blink {
+  0%,
+  100% {
+    opacity: 0.25;
+    transform: translateY(0);
+  }
+  40% {
+    opacity: 1;
+    transform: translateY(-2px);
+  }
+}
+
+@keyframes shipui-slide-in {
+  from {
+    opacity: 0;
+    transform: translateX(16px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes shipui-sweep {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(300%);
+  }
+}
+
+.animate-rise {
+  animation: shipui-rise var(--duration-base) var(--ease-out-soft) both;
+}
+.animate-live {
+  animation: shipui-pulse 1.8s var(--ease-out-soft) infinite;
+}
+.animate-slide-in {
+  animation: shipui-slide-in var(--duration-base) var(--ease-out-soft) both;
+}
+.animate-sweep {
+  animation: shipui-sweep 1.4s var(--ease-out-soft) infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
