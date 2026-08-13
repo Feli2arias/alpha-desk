@@ -1,10 +1,10 @@
-import type { Fundamentals } from '../src/types'
-import { ApiError, firstParam, route } from './_lib/handler'
-import { cached } from './_lib/cache'
-import { normalizeSymbol, toNumber } from './_lib/parse'
-import { fetchSummary } from './_lib/providers/nasdaq'
-import { fetchMetrics } from './_lib/providers/finnhub'
-import { assetClassCandidates } from './_lib/symbols'
+import type { Fundamentals } from '../src/types/index.js'
+import { ApiError, firstParam, route } from './_lib/handler.js'
+import { cached } from './_lib/cache.js'
+import { normalizeSymbol, toNumber } from './_lib/parse.js'
+import { fetchSummary } from './_lib/providers/nasdaq.js'
+import { fetchMetrics } from './_lib/providers/finnhub.js'
+import { assetClassCandidates } from './_lib/symbols.js'
 
 /**
  * GET /api/profile?symbol=NVDA

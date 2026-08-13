@@ -1,7 +1,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import type { Connect, Plugin } from 'vite'
-import type { ApiHandler, ApiRequest, ApiResponse } from '../api/_lib/handler'
+import type { ApiHandler, ApiRequest, ApiResponse } from '../api/_lib/handler.js'
 
 /**
  * Sirve las funciones de `api/` durante `npm run dev`.

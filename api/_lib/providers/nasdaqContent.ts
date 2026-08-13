@@ -1,5 +1,5 @@
-import { ApiError } from '../handler'
-import { fetchJson } from '../http'
+import { ApiError } from '../handler.js'
+import { fetchJson } from '../http.js'
 
 /**
  * Contenido editorial y buscador de Nasdaq.

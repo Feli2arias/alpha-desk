@@ -1,6 +1,6 @@
-import { ApiError } from '../handler'
-import { fetchJson } from '../http'
-import { parseUsDate, round2, toNumber, toNumberOr } from '../parse'
+import { ApiError } from '../handler.js'
+import { fetchJson } from '../http.js'
+import { parseUsDate, round2, toNumber, toNumberOr } from '../parse.js'
 
 /**
  * Nasdaq Data API — endpoints públicos de nasdaq.com.

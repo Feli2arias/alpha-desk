@@ -1,8 +1,8 @@
-import type { MarketIndex } from '../src/types'
-import { ApiError, route } from './_lib/handler'
-import { cached } from './_lib/cache'
-import { fetchQuote } from './_lib/providers/nasdaq'
-import { INDEX_DEFINITIONS } from './_lib/symbols'
+import type { MarketIndex } from '../src/types/index.js'
+import { ApiError, route } from './_lib/handler.js'
+import { cached } from './_lib/cache.js'
+import { fetchQuote } from './_lib/providers/nasdaq.js'
+import { INDEX_DEFINITIONS } from './_lib/symbols.js'
 
 /**
  * GET /api/indices

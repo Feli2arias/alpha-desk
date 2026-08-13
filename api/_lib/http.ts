@@ -1,4 +1,4 @@
-import { ApiError } from './handler'
+import { ApiError } from './handler.js'
 
 /**
  * Cliente HTTP hacia proveedores externos.

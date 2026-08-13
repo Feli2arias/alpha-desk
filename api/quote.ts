@@ -1,9 +1,9 @@
-import type { Quote } from '../src/types'
-import { ApiError, firstParam, route } from './_lib/handler'
-import { cached } from './_lib/cache'
-import { normalizeSymbolList, round2 } from './_lib/parse'
-import { fetchQuote } from './_lib/providers/nasdaq'
-import { assetClassCandidates } from './_lib/symbols'
+import type { Quote } from '../src/types/index.js'
+import { ApiError, firstParam, route } from './_lib/handler.js'
+import { cached } from './_lib/cache.js'
+import { normalizeSymbolList, round2 } from './_lib/parse.js'
+import { fetchQuote } from './_lib/providers/nasdaq.js'
+import { assetClassCandidates } from './_lib/symbols.js'
 
 /**
  * GET /api/quote?symbols=NVDA,MSFT

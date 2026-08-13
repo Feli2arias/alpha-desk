@@ -1,4 +1,4 @@
-import { fetchJson } from '../http'
+import { fetchJson } from '../http.js'
 
 /**
  * Finnhub — OPCIONAL. Se activa solo si existe FINNHUB_API_KEY en el entorno.
@@ -8,13 +8,23 @@ import { fetchJson } from '../http'
 
 const BASE = 'https://finnhub.io/api/v1'
 
+/**
+ * Lectura de variables de entorno vía `globalThis`.
+ * Vercel typechequea `api/` sin los tipos de Node, así que referenciar `process`
+ * directamente rompe su build aunque en runtime exista.
+ */
+function readEnv(name: string): string | undefined {
+  const runtime = globalThis as { process?: { env?: Record<string, string | undefined> } }
+  return runtime.process?.env?.[name]
+}
+
 /** La key nunca sale del servidor: se lee acá y sólo viaja al proveedor. */
 export function hasApiKey(): boolean {
-  return Boolean(process.env.FINNHUB_API_KEY)
+  return Boolean(readEnv('FINNHUB_API_KEY'))
 }
 
 function withToken(path: string): string {
-  const token = process.env.FINNHUB_API_KEY
+  const token = readEnv('FINNHUB_API_KEY')
   if (!token) throw new Error('FINNHUB_API_KEY no configurada')
   const separator = path.includes('?') ? '&' : '?'
   return `${BASE}${path}${separator}token=${encodeURIComponent(token)}`

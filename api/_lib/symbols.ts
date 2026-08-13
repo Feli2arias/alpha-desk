@@ -1,4 +1,4 @@
-import type { AssetClass } from './providers/nasdaq'
+import type { AssetClass } from './providers/nasdaq.js'
 
 /**
  * Índices de referencia de la barra superior.

@@ -3,7 +3,7 @@ import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { devApiPlugin } from './vite/devApiPlugin'
+import { devApiPlugin } from './vite/devApiPlugin.js'
 
 const rootDir = path.dirname(fileURLToPath(import.meta.url))
 

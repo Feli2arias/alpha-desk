@@ -1,6 +1,6 @@
-import { ApiError, firstParam, route } from './_lib/handler'
-import { cached } from './_lib/cache'
-import { fetchUniverse, type UniverseEntry } from './_lib/providers/nasdaqContent'
+import { ApiError, firstParam, route } from './_lib/handler.js'
+import { cached } from './_lib/cache.js'
+import { fetchUniverse, type UniverseEntry } from './_lib/providers/nasdaqContent.js'
 
 /**
  * GET /api/search?q=nvidia

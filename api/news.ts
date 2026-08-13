@@ -1,8 +1,8 @@
-import type { NewsItem } from '../src/types'
-import { ApiError, firstParam, route } from './_lib/handler'
-import { cached } from './_lib/cache'
-import { normalizeSymbol } from './_lib/parse'
-import { fetchNews } from './_lib/providers/nasdaqContent'
+import type { NewsItem } from '../src/types/index.js'
+import { ApiError, firstParam, route } from './_lib/handler.js'
+import { cached } from './_lib/cache.js'
+import { normalizeSymbol } from './_lib/parse.js'
+import { fetchNews } from './_lib/providers/nasdaqContent.js'
 
 /**
  * GET /api/news?symbol=NVDA
