@@ -1,5 +1,7 @@
 import { NavLink } from 'react-router-dom'
-import { Activity, CandlestickChart, LayoutGrid, Workflow } from 'lucide-react'
+import { Activity, CandlestickChart, LayoutGrid, Sparkles, Star, Workflow } from 'lucide-react'
+import { useAnalysis } from '@/context/AnalysisContext'
+import { useWatchlist } from '@/context/WatchlistContext'
 import { cn } from '@/lib/cn'
 
 // Contract: Sidebar
@@ -10,12 +12,17 @@ import { cn } from '@/lib/cn'
 // Responsive: <lg oculta, ≥lg columna fija de var(--spacing-sidebar)
 
 const NAV_ITEMS = [
+  { to: '/agente', label: 'Agente', icon: Sparkles, end: false },
   { to: '/', label: 'Top 10 del día', icon: LayoutGrid, end: true },
+  { to: '/watchlist', label: 'Watchlist', icon: Star, end: false },
   { to: '/markets', label: 'Markets', icon: CandlestickChart, end: false },
   { to: '/pipeline', label: 'Pipeline', icon: Workflow, end: false },
 ]
 
 export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
+  const { activeCount } = useAnalysis()
+  const { tickers } = useWatchlist()
+
   return (
     <nav
       aria-label="Navegación principal"
@@ -50,13 +57,28 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
               {({ isActive }) => (
                 <>
                   <item.icon size={16} strokeWidth={2.2} className={isActive ? 'text-ai-400' : ''} />
-                  {item.label}
+                  <span className="flex-1">{item.label}</span>
+                  {item.to === '/watchlist' && tickers.length > 0 ? (
+                    <span className="num text-caption text-fg-subtle">{tickers.length}</span>
+                  ) : null}
+                  {item.to === '/agente' && activeCount > 0 ? (
+                    <span
+                      className="animate-live size-1.5 rounded-full bg-ai-400"
+                      aria-label={`${activeCount} análisis en curso`}
+                    />
+                  ) : null}
+                  {item.to === '/agente' ? (
+                    <kbd className="num rounded-sm border border-border px-1.5 py-0.5 text-caption text-fg-subtle">
+                      ⌘K
+                    </kbd>
+                  ) : null}
                 </>
               )}
             </NavLink>
           </li>
         ))}
       </ul>
+
 
       <div className="mt-auto px-5 py-5">
         <p className="text-caption uppercase tracking-[0.1em] text-fg-subtle">Mockup</p>

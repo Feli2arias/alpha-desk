@@ -1,12 +1,12 @@
 import { useCallback, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
-import { ArrowLeft, MessageSquare } from 'lucide-react'
+import { Link, useNavigate, useParams } from 'react-router-dom'
+import { ArrowLeft, MessageSquare, Zap } from 'lucide-react'
 import type { Timeframe } from '@/types'
 import { agentService } from '@/services/agentService'
 import { marketDataService } from '@/services/marketDataService'
 import { useAsync } from '@/hooks/useAsync'
 import { useLiveQuotes } from '@/hooks/useLiveQuotes'
-import { useChatDock } from '@/context/ChatDockContext'
+import { useAgentChat } from '@/context/AgentChatContext'
 import { formatCompact, formatPrice } from '@/lib/format'
 import { SIGNAL_LABEL, SIGNAL_TONE } from '@/lib/signals'
 import { Badge } from '@/components/ui/Badge'
@@ -31,7 +31,8 @@ const RANGES: { value: Timeframe; label: Timeframe }[] = [
 export function StockDetail() {
   const { ticker = '' } = useParams()
   const upper = ticker.toUpperCase()
-  const { openForStock } = useChatDock()
+  const { setFocusTicker, analyze } = useAgentChat()
+  const navigate = useNavigate()
   const [range, setRange] = useState<Timeframe>('6M')
 
   const loadPick = useCallback(() => agentService.getPick(upper), [upper])
@@ -115,14 +116,30 @@ export function StockDetail() {
             </div>
           </header>
 
-          <button
-            type="button"
-            onClick={() => openForStock(pick.company.ticker)}
-            className="mt-5 inline-flex items-center gap-2 rounded-md border border-ai-600/40 bg-ai-600/12 px-4 py-2.5 text-sm font-medium text-ai-300 transition-colors duration-fast hover:bg-ai-600/20 hover:text-fg"
-          >
-            <MessageSquare size={15} strokeWidth={2.3} aria-hidden />
-            Hablar sobre esta acción
-          </button>
+          <div className="mt-5 flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                setFocusTicker(pick.company.ticker)
+                navigate('/agente')
+              }}
+              className="inline-flex items-center gap-2 rounded-md border border-ai-600/40 bg-ai-600/12 px-4 py-2.5 text-sm font-medium text-ai-300 transition-colors duration-fast hover:bg-ai-600/20 hover:text-fg"
+            >
+              <MessageSquare size={15} strokeWidth={2.3} aria-hidden />
+              Hablar sobre esta acción
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                analyze(pick.company.ticker)
+                navigate('/agente')
+              }}
+              className="inline-flex items-center gap-2 rounded-md border border-border bg-base-950 px-4 py-2.5 text-sm font-medium text-fg-muted transition-colors duration-fast hover:border-border-strong hover:text-fg"
+            >
+              <Zap size={15} strokeWidth={2.3} aria-hidden />
+              Correr análisis nuevo
+            </button>
+          </div>
 
           <div className="mt-7 grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_22rem]">
             <div className="flex flex-col gap-5">

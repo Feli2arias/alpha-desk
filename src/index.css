@@ -87,6 +87,7 @@
 
   /* Layout */
   --spacing-sidebar: 15rem;
+  --spacing-chat: 23rem;
 }
 
 @layer base {

@@ -142,7 +142,7 @@ export const chatService = {
       role: 'agent',
       createdAt: new Date().toISOString(),
       content:
-        'Hola. Soy el agente del pipeline — tengo el run de hoy completo en contexto: 500 acciones analizadas, 47 que pasaron filtros y las 10 seleccionadas con su tesis.\n\nPreguntame por el Top 10, por los riesgos del portafolio, por el contexto de mercado o por cómo funciona el proceso de selección.',
+        'Hola. Soy el agente del pipeline — tengo el run de hoy completo en contexto: 500 acciones analizadas, 47 que pasaron filtros y las 10 seleccionadas con su tesis.\n\nPodés pedirme un análisis nuevo de cualquier acción (probá con **"revisá NVDA"** o **"¿qué opinás de Broadcom?"**): el Research Agent hace el trabajo de campo y el Decision Agent te da el veredicto.\n\nTambién puedo hablarte del Top 10, de los riesgos del portafolio o del contexto de mercado.',
     }
   },
 
@@ -179,14 +179,21 @@ export const chatService = {
 
   /** Sugerencias mostradas como chips debajo del input. */
   getSuggestions(context: ChatContext): string[] {
-    if (context.scope === 'stock') {
-      return ['¿Por qué la elegiste?', '¿Cuáles son los riesgos?', '¿Dónde está el stop?', '¿Qué dicen las métricas?']
+    if (context.scope === 'stock' && context.ticker) {
+      return [
+        `Revisá ${context.ticker}`,
+        '¿Por qué la elegiste?',
+        '¿Cuáles son los riesgos?',
+        '¿Dónde está el stop?',
+        '¿Qué dicen las métricas?',
+      ]
     }
     return [
+      'Revisá NVDA',
+      '¿Qué opinás de Broadcom?',
       '¿Cómo armaste el Top 10 de hoy?',
       '¿Cuáles son los riesgos del portafolio?',
       '¿Cómo está el mercado?',
-      '¿Cómo funciona el pipeline?',
     ]
   },
 }

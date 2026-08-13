@@ -1,19 +1,30 @@
-import { useState, type ReactNode } from 'react'
-import { Menu, MessageSquare, X } from 'lucide-react'
-import { useChatDock } from '@/context/ChatDockContext'
-import { ChatDock } from '@/components/chat/ChatDock'
+import { useEffect, useState, type ReactNode } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { Menu, Sparkles, X } from 'lucide-react'
 import { Sidebar } from './Sidebar'
 
 // Contract: AppShell
 // Props: children (ReactNode, req)
 // Variants: única
-// States: drawer de navegación abierto/cerrado (solo <lg); dock de chat abierto/cerrado
-// Accessibility: skip link al contenido, drawer con aria-modal, botón flotante etiquetado
+// States: drawer de navegación abierto/cerrado (<lg)
+// Accessibility: skip link al contenido, drawer con aria-modal, atajo ⌘K a la vista del agente
 // Responsive: <lg barra superior + drawer; ≥lg sidebar fija y contenido con scroll propio
 
 export function AppShell({ children }: { children: ReactNode }) {
   const [navOpen, setNavOpen] = useState(false)
-  const { openGlobal, open: chatOpen } = useChatDock()
+  const navigate = useNavigate()
+
+  // ⌘K / Ctrl+K lleva al agente desde cualquier vista.
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
+        event.preventDefault()
+        navigate('/agente')
+      }
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [navigate])
 
   return (
     <div className="flex h-dvh overflow-hidden bg-bg">
@@ -56,27 +67,21 @@ export function AppShell({ children }: { children: ReactNode }) {
           >
             {navOpen ? <X size={18} /> : <Menu size={18} />}
           </button>
-          <p className="text-h3 font-semibold">Alpha Desk</p>
+          <p className="flex-1 text-h3 font-semibold">Alpha Desk</p>
+          <button
+            type="button"
+            onClick={() => navigate('/agente')}
+            aria-label="Ir al agente"
+            className="rounded-sm p-1.5 text-ai-400 transition-colors duration-fast hover:bg-base-850"
+          >
+            <Sparkles size={18} strokeWidth={2.3} />
+          </button>
         </header>
 
         <main id="contenido" className="min-h-0 flex-1 overflow-y-auto">
           {children}
         </main>
       </div>
-
-      {!chatOpen ? (
-        <button
-          type="button"
-          onClick={openGlobal}
-          className="fixed right-5 bottom-5 z-30 flex items-center gap-2 rounded-lg border border-ai-600/40 bg-ai-600/15 px-4 py-3 text-sm font-medium text-ai-300 backdrop-blur-sm transition-transform duration-fast ease-out-soft hover:scale-[1.03] hover:text-fg"
-          style={{ boxShadow: 'var(--shadow-glow-ai)' }}
-        >
-          <MessageSquare size={16} strokeWidth={2.3} aria-hidden />
-          Hablar con el agente
-        </button>
-      ) : null}
-
-      <ChatDock />
     </div>
   )
 }
