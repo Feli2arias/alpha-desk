@@ -340,7 +340,10 @@ export const analysisService = {
     }
 
     const derived = derive(seed)
-    const spot = marketDataService.peekPrice(upper) ?? seed.basePrice
+    // El precio del veredicto sale del proveedor real; el seed sólo cubre el
+    // caso de que la API no responda.
+    const liveQuote = await marketDataService.getQuote(upper)
+    const spot = liveQuote?.price ?? seed.basePrice
 
     let run: AnalysisRun = {
       id,

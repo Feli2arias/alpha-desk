@@ -5,7 +5,11 @@ Maqueta funcional de un dashboard donde dos agentes trabajan en cadena:
 - **Research Agent** (modelo rápido, alto volumen) recorre el universo de acciones, aplica filtros cuantitativos y resume las noticias relevantes.
 - **Decision Agent** (modelo de razonamiento profundo) recibe lo que sobrevivió y elige las **10 mejores acciones del día**, con tesis completa, precio objetivo, stop y asignación sugerida.
 
-> **Todo son datos falsos.** No hay APIs, ni agentes reales, ni autenticación. El objetivo de esta fase es validar la idea y el flujo de UX antes de conectar nada.
+> **Qué es real y qué no.** Los precios, los gráficos, los fundamentales y las
+> noticias son datos reales del mercado estadounidense, servidos por las funciones
+> de `api/`. Lo que sigue simulado es la capa de agentes: la selección del Top 10,
+> los puntajes de confianza, las tesis y el chat. No hay autenticación ni
+> persistencia por usuario.
 
 ## Arrancar
 
@@ -34,50 +38,76 @@ El chat global se abre desde el botón flotante en cualquier pantalla. El chat c
 ## Estructura
 
 ```
+api/                          Funciones serverless — el único lugar que habla con el proveedor
+├── quote.ts  series.ts  profile.ts  news.ts  indices.ts  search.ts
+└── _lib/
+    ├── handler.ts            contrato de request/response + envolvente de la respuesta
+    ├── http.ts               fetch con timeout y reintento
+    ├── cache.ts              caché TTL en memoria de la lambda
+    ├── parse.ts              "$1.234,56" -> number + validación de símbolos
+    └── providers/            nasdaq (precios), nasdaqContent (noticias, universo), finnhub (opcional)
+
+vite/devApiPlugin.ts          sirve api/ durante npm run dev
+
 src/
-├── types/          Modelos de dominio (Pick, Quote, Candle, Metric, ChatMessage…)
-├── data/           Mocks puros: empresas, picks + tesis, noticias, logs del pipeline,
-│                   respuestas del chat, y el generador de series (random walk determinista)
+├── types/          Modelos de dominio (Quote, Candle, Fundamentals, Pick, MarketStatus…)
+├── data/           Respaldo determinista para cuando el proveedor no responde
 ├── services/       ⚠️ ÚNICA fuente de datos de la UI
-│   ├── marketDataService.ts   precios, series, índices, ticks en vivo
+│   ├── apiClient.ts           el único fetch de la app: dedupe, caché y errores
+│   ├── marketDataService.ts   precios, series, fundamentales, índices, búsqueda
+│   ├── quoteStream.ts         polling compartido, con cadencia según la sesión
 │   ├── agentService.ts        Top 10, tesis, métricas, noticias, último run
-│   ├── chatService.ts         respuestas del chat (global y por acción)
-│   └── latency.ts             latencia simulada
-├── hooks/          useAsync, useLiveQuotes / useLiveIndices, useChat
-├── context/        WatchlistProvider (watchlist en memoria), ChatDockProvider (panel de chat)
-├── lib/            format (moneda, %, fechas), signals (etiquetas), random (PRNG), cn
+│   └── chatService.ts         respuestas del chat (global y por acción)
+├── hooks/          useAsync, useLiveQuotes / useLiveIndices / useMarketStatus, useChat
+├── context/        WatchlistProvider, AnalysisProvider, AgentChatProvider
+├── lib/            format, signals, marketStatus (sesión en horario de Nueva York),
+│                   brandColors, random (PRNG), cn
 ├── components/
 │   ├── layout/     AppShell, Sidebar
-│   ├── ui/         Card, Badge, Delta, ScoreRing, Sparkline, Skeleton, SegmentedControl…
-│   ├── charts/     PriceChart (área y velas, sobre Recharts)
+│   ├── ui/         Card, Badge, Delta, Stat, PageHeader, ScoreRing, Skeleton…
+│   ├── charts/     PriceChart (área y velas, con panel de volumen, sobre Recharts)
 │   ├── dashboard/  PickCard, PipelineStatus
 │   ├── detail/     ThesisPanel, MetricsTable, NewsFeed, TargetBar
-│   ├── markets/    IndexStrip, Watchlist
-│   ├── chat/       ChatWindow, ChatDock, Bubble, TypingIndicator
+│   ├── markets/    IndexStrip, Watchlist, SymbolSearch, MarketStatusPill
+│   ├── chat/       ChatStream, ChatComposer, AnalysisMessage, VerdictCard…
 │   └── pipeline/   FlowDiagram, RunLog
-└── pages/          Dashboard, StockDetail, Markets, Pipeline
+└── pages/          Dashboard, AgentPage, WatchlistPage, Markets, StockDetail, Pipeline
 ```
 
-**Regla de arquitectura:** ningún componente importa nada de `src/data/`. Todo pasa por `src/services/`. Es lo que hace que conectar APIs reales sea cambiar tres archivos y nada más.
+**Regla de arquitectura:** ningún componente hace `fetch` ni importa nada de `src/data/`. Todo pasa por `src/services/`. Gracias a eso, conectar los datos reales no obligó a tocar ni un componente: sólo cambió el cuerpo de los servicios.
 
-## Cómo conectar APIs reales
+## Datos de mercado
 
-Cada servicio ya tiene las firmas definitivas. Solo hay que cambiar el cuerpo de las funciones.
+Los datos salen de funciones serverless en `api/`, no del cliente. Hacerlo del
+lado del servidor permite ocultar claves, cachear y esquivar el CORS de los
+proveedores.
 
-### 1. Datos de mercado → `src/services/marketDataService.ts`
-
-Reemplazar cada método por el fetch al proveedor (Polygon, Finnhub o la API de IBKR):
-
-| Método | Endpoint típico |
+| Endpoint | Devuelve |
 |---|---|
-| `getQuote(ticker)` / `getQuotes(tickers)` | snapshot de cotizaciones |
-| `getSeries(ticker, range)` | agregados OHLC (mapear el rango a la resolución del proveedor) |
-| `getIndices()` | snapshot de índices |
-| `listCompanies()` / `getCompany()` | referencia de tickers |
+| `GET /api/quote?symbols=NVDA,MSFT` | cotización en vivo de hasta 25 símbolos |
+| `GET /api/series?symbol=NVDA&range=1M` | velas OHLC (`1D` intradía de 5 min; el resto diarias) |
+| `GET /api/profile?symbol=NVDA` | fundamentales: rangos, volumen, capitalización, dividendo |
+| `GET /api/news?symbol=NVDA` | titulares con fuente, resumen y link |
+| `GET /api/indices` | S&P 500, Nasdaq 100, Nasdaq Composite y Dow |
+| `GET /api/search?q=nvidia` | busca por ticker o nombre en ~7000 papeles listados en EE.UU. |
 
-Los ticks simulados (`tick()` + `subscribe()`) se reemplazan por un WebSocket: el suscriptor se mantiene igual, así que `useLiveQuotes` y todos los componentes que lo usan no cambian. Borrar `src/data/companies.ts` y `src/data/seriesGenerator.ts` cuando ya no se usen.
+**Proveedor:** la API pública de Nasdaq, que no necesita clave. `FINNHUB_API_KEY`
+es opcional y sólo agrega P/E, BPA y beta — ver `.env.example`.
 
-### 2. Pipeline de agentes → `src/services/agentService.ts`
+**Índices:** Nasdaq sólo publica COMP y NDX como índice. El S&P 500 y el Dow se
+leen del ETF que los replica (SPY y DIA) y la UI los marca con "vía SPY" para no
+presentarlos como si fueran el índice.
+
+**Si el proveedor falla,** cada método de `marketDataService` cae al generador
+determinista de `src/data/` y marca el resultado con `source: 'simulated'`, que la
+interfaz muestra en pantalla. Nunca se hace pasar un dato simulado por real.
+
+**En desarrollo,** `npm run dev` sirve las mismas funciones a través de
+`vite/devApiPlugin.ts`, así que local y producción se comportan igual.
+
+## Cómo conectar el resto
+
+### 1. Pipeline de agentes → `src/services/agentService.ts`
 
 El pipeline real corre fuera de la app (cron/worker) y persiste el resultado. Acá solo se lee:
 
@@ -87,15 +117,15 @@ El pipeline real corre fuera de la app (cron/worker) y persiste el resultado. Ac
 
 Conviene guardar la salida del Decision Agent con el mismo shape que `Pick` para no traducir en el cliente.
 
-### 3. Chat → `src/services/chatService.ts`
+### 2. Chat → `src/services/chatService.ts`
 
 `sendMessage(context, message, history)` pasa a llamar a un endpoint propio que invoca la Claude API. El `context` ya distingue entre `scope: 'global'` y `scope: 'stock'` con su ticker — eso es exactamente lo que define el system prompt y qué se inyecta como contexto (tesis + métricas + noticias de esa acción, o el run completo).
 
 Importante: la clave de la API **nunca** va en el cliente. La llamada tiene que pasar por un backend o una serverless function.
 
-### 4. Lo que hay que agregar
+### 3. Lo que hay que agregar
 
-Autenticación, persistencia de la watchlist por usuario, manejo de rate limits y caché de cotizaciones. Nada de eso existe hoy porque no hacía falta para validar el flujo.
+Autenticación y persistencia de la watchlist por usuario. El caché y los límites de pedidos ya están resueltos en `api/_lib/cache.ts` y en las cabeceras `s-maxage` de cada endpoint.
 
 ## Notas de diseño
 

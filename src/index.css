@@ -32,10 +32,15 @@
   --color-loss-600: oklch(0.595 0.205 22);
   --color-warn-500: oklch(0.800 0.155 82);
 
-  /* Aliases semánticos */
+  /* Aliases semánticos.
+     Cuatro niveles de superficie: `inset` hunde (inputs, tablas, pozos),
+     `surface` es el panel, `raised` lo que flota encima. Sin este cuarto nivel
+     los campos dentro de una card quedaban al mismo tono que la card. */
   --color-bg: var(--color-base-950);
+  --color-surface-inset: oklch(0.122 0.006 285);
   --color-surface: var(--color-base-900);
   --color-surface-raised: var(--color-base-850);
+  --color-border-subtle: oklch(0.243 0.009 285 / 0.55);
   --color-border: var(--color-base-800);
   --color-border-strong: var(--color-base-700);
   --color-fg: var(--color-base-100);
@@ -75,6 +80,8 @@
   --shadow-sm: 0 1px 2px oklch(0 0 0 / 0.4);
   --shadow-md: 0 4px 12px oklch(0 0 0 / 0.45);
   --shadow-lg: 0 12px 32px -8px oklch(0 0 0 / 0.6);
+  /* Filo claro de 1px arriba: separa el panel del fondo sin subir su tono. */
+  --shadow-panel: inset 0 1px 0 0 oklch(1 0 0 / 0.04), 0 1px 2px oklch(0 0 0 / 0.35);
   --shadow-glow-ai: 0 0 0 1px oklch(0.638 0.222 296 / 0.35), 0 8px 28px -12px oklch(0.638 0.222 296 / 0.55);
 
   /* Motion */

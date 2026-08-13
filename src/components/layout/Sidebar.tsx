@@ -47,10 +47,13 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
               onClick={onNavigate}
               className={({ isActive }) =>
                 cn(
-                  'flex items-center gap-2.5 rounded-md px-3 py-2 text-sm font-medium transition-colors duration-fast',
+                  // La barra de acento a la izquierda marca el activo sin depender
+                  // sólo del color de fondo, que casi no contrasta en este tema.
+                  'relative flex items-center gap-2.5 rounded-md px-3 py-2 text-sm font-medium transition-colors duration-fast',
+                  'before:absolute before:top-1/2 before:left-0 before:h-4 before:w-0.5 before:-translate-y-1/2 before:rounded-full before:transition-colors before:duration-fast',
                   isActive
-                    ? 'bg-base-850 text-fg'
-                    : 'text-fg-subtle hover:bg-base-900 hover:text-fg-muted',
+                    ? 'bg-base-850 text-fg before:bg-ai-500'
+                    : 'text-fg-subtle before:bg-transparent hover:bg-base-900 hover:text-fg-muted',
                 )
               }
             >
@@ -80,10 +83,11 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
       </ul>
 
 
-      <div className="mt-auto px-5 py-5">
-        <p className="text-caption uppercase tracking-[0.1em] text-fg-subtle">Mockup</p>
-        <p className="mt-1.5 text-sm leading-snug text-fg-subtle">
-          Datos simulados. No es asesoramiento financiero.
+      <div className="mt-auto border-t border-border-subtle px-5 py-4">
+        <p className="text-caption uppercase tracking-[0.1em] text-fg-subtle">Fuentes</p>
+        <p className="mt-1.5 text-caption leading-relaxed text-fg-subtle">
+          Precios, gráficos y noticias reales del mercado. Las tesis y los puntajes de los
+          agentes son simulados. No es asesoramiento financiero.
         </p>
       </div>
     </nav>

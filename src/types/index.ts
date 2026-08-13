@@ -7,7 +7,7 @@
 export type Signal = 'strong_buy' | 'buy' | 'hold'
 export type Sentiment = 'positive' | 'neutral' | 'negative'
 export type MetricVerdict = 'bullish' | 'neutral' | 'bearish'
-export type Timeframe = '1D' | '1W' | '1M' | '6M' | '1Y'
+export type Timeframe = '1D' | '1W' | '1M' | '3M' | '6M' | '1Y' | '5Y'
 export type AgentRole = 'research' | 'decision'
 export type PipelineStage = 'idle' | 'running' | 'done' | 'error'
 
@@ -18,19 +18,64 @@ export interface Company {
   sector: string
   /** Color de marca usado en el avatar y los charts. */
   brandColor: string
+  exchange?: string
 }
 
-/** Precio en un instante. Es lo que muta cuando el mercado "se mueve". */
+/** De dónde salió un dato: proveedor real o generador local de respaldo. */
+export type DataSource = 'live' | 'simulated'
+
+/**
+ * Precio en un instante. Sólo cotización: los fundamentales viven en
+ * `Fundamentals` porque llegan de un endpoint distinto y mucho más lento.
+ */
 export interface Quote {
   ticker: string
+  name: string
+  exchange: string
   price: number
   change: number
   changePercent: number
-  dayHigh: number
-  dayLow: number
-  volume: number
-  marketCap: number
+  /** Cierre de la rueda anterior. Es la base del % del día. */
+  previousClose: number | null
+  /** Precio fuera de rueda (pre-market o after-hours), si el proveedor lo informa. */
+  extendedPrice: number | null
+  extendedChangePercent: number | null
+  /** True si el proveedor marcó el precio como tiempo real y no diferido. */
+  realtime: boolean
   updatedAt: string
+  source: DataSource
+}
+
+/** Fundamentales y rangos. Se piden sólo para la acción que se está mirando. */
+export interface Fundamentals {
+  ticker: string
+  dayHigh: number | null
+  dayLow: number | null
+  yearHigh: number | null
+  yearLow: number | null
+  volume: number | null
+  averageVolume: number | null
+  marketCap: number | null
+  peRatio: number | null
+  earningsPerShare: number | null
+  dividendYield: number | null
+  annualizedDividend: number | null
+  /** Precio objetivo a un año segun el consenso de analistas. */
+  oneYearTarget: number | null
+  sector: string | null
+  industry: string | null
+  exchange: string | null
+  source: DataSource
+}
+
+/** Sesión del mercado estadounidense en este momento. */
+export type MarketSession = 'pre' | 'open' | 'after' | 'closed'
+
+export interface MarketStatus {
+  session: MarketSession
+  label: string
+  /** True mientras haya negociación, aunque sea fuera de la rueda principal. */
+  trading: boolean
 }
 
 /** Punto de una serie temporal. `open/high/low` son opcionales para líneas. */
@@ -44,11 +89,17 @@ export interface Candle {
 }
 
 export interface MarketIndex {
+  /** Símbolo canónico del índice, para mostrar. */
   symbol: string
   name: string
   value: number
   change: number
   changePercent: number
+  /** True si el valor viene de un ETF que replica el índice, no del índice. */
+  proxy: boolean
+  /** Símbolo realmente consultado cuando `proxy` es true. */
+  proxySymbol?: string
+  source: DataSource
 }
 
 /** Una métrica evaluada por el Research Agent. */
@@ -68,10 +119,13 @@ export interface NewsItem {
   headline: string
   source: string
   publishedAt: string
-  summary: string
-  sentiment: Sentiment
+  /** Link a la nota original. Vacío en las noticias de respaldo. */
+  url?: string
+  /** Resumen y evaluación los agrega el Research Agent, no el proveedor. */
+  summary?: string
+  sentiment?: Sentiment
   /** Relevancia asignada por el Research Agent, 0–100. */
-  relevance: number
+  relevance?: number
 }
 
 /** Tesis completa del Decision Agent para una acción. */

@@ -1,72 +1,61 @@
-import { useEffect, useState } from 'react'
-import type { MarketIndex, Quote } from '@/types'
+import { useEffect, useMemo, useState } from 'react'
+import type { MarketIndex, MarketStatus, Quote } from '@/types'
 import { marketDataService } from '@/services/marketDataService'
+import { currentMarketStatus, peekQuotes, subscribeQuotes } from '@/services/quoteStream'
+import { getMarketStatus, pollIntervalMs } from '@/lib/marketStatus'
 
-/** Intervalo entre ticks simulados. Con datos reales, esto lo reemplaza un WebSocket. */
-const TICK_MS = 3000
-
-let tickerHandle: ReturnType<typeof setInterval> | null = null
-let subscriberCount = 0
-
-/** Un solo intervalo global para toda la app, sin importar cuántos componentes escuchen. */
-function useMarketTicker(enabled: boolean): void {
-  useEffect(() => {
-    if (!enabled) return
-
-    subscriberCount += 1
-    if (!tickerHandle) {
-      tickerHandle = setInterval(() => marketDataService.tick(), TICK_MS)
-    }
-
-    return () => {
-      subscriberCount -= 1
-      if (subscriberCount === 0 && tickerHandle) {
-        clearInterval(tickerHandle)
-        tickerHandle = null
-      }
-    }
-  }, [enabled])
-}
-
-/** Cotizaciones que se refrescan con cada tick del mercado. */
+/**
+ * Cotizaciones en vivo de un conjunto de tickers.
+ * El polling y la cadencia los maneja `quoteStream`; acá sólo se declara
+ * interés y se re-renderiza cuando llegan precios nuevos.
+ */
 export function useLiveQuotes(tickers: readonly string[], enabled = true): Quote[] {
-  const [quotes, setQuotes] = useState<Quote[]>([])
   const key = tickers.join(',')
-
-  useMarketTicker(enabled && tickers.length > 0)
+  // El stream guarda la referencia del array, así que tiene que ser estable.
+  const stable = useMemo(() => (key ? key.split(',') : []), [key])
+  const [quotes, setQuotes] = useState<Quote[]>(() => peekQuotes(stable))
 
   useEffect(() => {
-    if (tickers.length === 0) {
+    if (!enabled || stable.length === 0) {
       setQuotes([])
       return
     }
 
-    let active = true
-    const load = () => {
-      marketDataService.getQuotes(tickers).then((next) => {
-        if (active) setQuotes(next)
-      })
-    }
-
-    load()
-    const unsubscribe = enabled ? marketDataService.subscribe(load) : () => {}
-
-    return () => {
-      active = false
-      unsubscribe()
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [key, enabled])
+    setQuotes(peekQuotes(stable))
+    return subscribeQuotes(stable, () => {
+      setQuotes(peekQuotes(stable))
+    })
+  }, [stable, enabled])
 
   return quotes
 }
 
+/** Estado de la sesión del mercado, refrescado en cada cambio de minuto relevante. */
+export function useMarketStatus(): MarketStatus {
+  const [status, setStatus] = useState<MarketStatus>(() => currentMarketStatus())
+
+  useEffect(() => {
+    const update = () => {
+      setStatus(getMarketStatus())
+    }
+    update()
+    // Un minuto alcanza: lo único que se busca es cruzar la apertura o el cierre.
+    const handle = setInterval(update, 60_000)
+    return () => {
+      clearInterval(handle)
+    }
+  }, [])
+
+  return status
+}
+
+/** Índices de referencia, con la misma cadencia que las cotizaciones. */
 export function useLiveIndices(enabled = true): MarketIndex[] {
   const [indices, setIndices] = useState<MarketIndex[]>([])
 
-  useMarketTicker(enabled)
-
   useEffect(() => {
+    if (!enabled) return
+
     let active = true
     const load = () => {
       marketDataService.getIndices().then((next) => {
@@ -75,11 +64,11 @@ export function useLiveIndices(enabled = true): MarketIndex[] {
     }
 
     load()
-    const unsubscribe = enabled ? marketDataService.subscribe(load) : () => {}
+    const handle = setInterval(load, pollIntervalMs(getMarketStatus().session))
 
     return () => {
       active = false
-      unsubscribe()
+      clearInterval(handle)
     }
   }, [enabled])
 

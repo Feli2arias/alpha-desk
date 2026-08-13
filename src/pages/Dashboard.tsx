@@ -79,8 +79,9 @@ export function Dashboard() {
         </div>
 
         <p className="mt-8 max-w-3xl text-sm text-fg-subtle">
-          Mockup con datos simulados. Los precios, métricas, noticias y razonamientos de esta
-          pantalla son ficticios y no constituyen asesoramiento financiero.
+          Los precios y los gráficos son reales y se actualizan en vivo. La selección, los
+          puntajes de confianza y las tesis son producidos por agentes simulados: sirven para
+          mostrar el producto, no constituyen asesoramiento financiero.
         </p>
       </div>
     </div>

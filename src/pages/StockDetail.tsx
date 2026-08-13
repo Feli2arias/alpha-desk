@@ -7,13 +7,14 @@ import { marketDataService } from '@/services/marketDataService'
 import { useAsync } from '@/hooks/useAsync'
 import { useLiveQuotes } from '@/hooks/useLiveQuotes'
 import { useAgentChat } from '@/context/AgentChatContext'
-import { formatCompact, formatPrice } from '@/lib/format'
+import { formatCompact, formatNumber, formatPercent, formatPrice } from '@/lib/format'
 import { SIGNAL_LABEL, SIGNAL_TONE } from '@/lib/signals'
 import { Badge } from '@/components/ui/Badge'
 import { Card, CardHeader } from '@/components/ui/Card'
 import { Delta } from '@/components/ui/Delta'
 import { ScoreRing } from '@/components/ui/ScoreRing'
 import { Skeleton } from '@/components/ui/Skeleton'
+import { Stat } from '@/components/ui/Stat'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { TickerAvatar } from '@/components/ui/TickerAvatar'
 import { PriceChart } from '@/components/charts/PriceChart'
@@ -22,10 +23,12 @@ import { NewsFeed } from '@/components/detail/NewsFeed'
 import { TargetBar } from '@/components/detail/TargetBar'
 import { ThesisPanel } from '@/components/detail/ThesisPanel'
 
-const RANGES: { value: Timeframe; label: Timeframe }[] = [
+const RANGES: { value: Timeframe; label: string }[] = [
   { value: '1M', label: '1M' },
+  { value: '3M', label: '3M' },
   { value: '6M', label: '6M' },
-  { value: '1Y', label: '1Y' },
+  { value: '1Y', label: '1A' },
+  { value: '5Y', label: '5A' },
 ]
 
 export function StockDetail() {
@@ -37,14 +40,20 @@ export function StockDetail() {
 
   const loadPick = useCallback(() => agentService.getPick(upper), [upper])
   const loadNews = useCallback(() => agentService.getNews(upper), [upper])
-  const loadSeries = useCallback(() => marketDataService.getSeries(upper, range), [upper, range])
+  const loadSeries = useCallback(
+    () => marketDataService.getSeriesDetail(upper, range),
+    [upper, range],
+  )
+  const loadFundamentals = useCallback(() => marketDataService.getFundamentals(upper), [upper])
 
   const pickState = useAsync(loadPick, [upper])
   const newsState = useAsync(loadNews, [upper])
   const seriesState = useAsync(loadSeries, [upper, range])
+  const fundamentalsState = useAsync(loadFundamentals, [upper])
 
   const [quote] = useLiveQuotes([upper])
   const pick = pickState.data
+  const fundamentals = fundamentalsState.data
 
   if (!pickState.loading && !pick) {
     return (
@@ -150,7 +159,7 @@ export function StockDetail() {
               <Card>
                 <CardHeader
                   title="Precio"
-                  hint={`Histórico simulado · línea punteada = objetivo del agente`}
+                  hint="Datos reales del mercado · la línea punteada es el objetivo del agente"
                   action={
                     <SegmentedControl
                       options={RANGES}
@@ -165,11 +174,12 @@ export function StockDetail() {
                   <Skeleton className="h-[300px] w-full" />
                 ) : (
                   <PriceChart
-                    candles={seriesState.data ?? []}
+                    candles={seriesState.data?.candles ?? []}
                     mode="area"
                     range={range}
                     color={pick.company.brandColor}
                     height={300}
+                    showVolume={seriesState.data?.hasVolume ?? false}
                     referencePrice={pick.thesis.targetPrice}
                     referenceLabel="Objetivo del agente"
                   />
@@ -195,31 +205,64 @@ export function StockDetail() {
               </Card>
 
               <Card>
-                <CardHeader title="Datos de mercado" />
-                <dl className="flex flex-col gap-2.5 text-sm">
-                  {[
-                    ['Máximo del día', quote ? formatPrice(quote.dayHigh) : '—'],
-                    ['Mínimo del día', quote ? formatPrice(quote.dayLow) : '—'],
-                    ['Volumen medio', quote ? formatCompact(quote.volume) : '—'],
-                    ['Capitalización', quote ? `USD ${formatCompact(quote.marketCap)}` : '—'],
-                    ['Asignación sugerida', `${pick.allocationPercent}%`],
-                  ].map(([label, value]) => (
-                    <div key={label} className="flex items-center justify-between gap-3">
-                      <dt className="text-fg-subtle">{label}</dt>
-                      <dd className="num font-medium text-fg-muted">{value}</dd>
-                    </div>
-                  ))}
+                <CardHeader title="Datos de mercado" divided />
+                <dl className="grid grid-cols-2 gap-x-4 gap-y-3.5">
+                  <Stat
+                    label="Máx. día"
+                    value={fundamentals?.dayHigh ? formatPrice(fundamentals.dayHigh) : '—'}
+                  />
+                  <Stat
+                    label="Mín. día"
+                    value={fundamentals?.dayLow ? formatPrice(fundamentals.dayLow) : '—'}
+                  />
+                  <Stat
+                    label="Rango 52 sem."
+                    value={
+                      fundamentals?.yearLow && fundamentals.yearHigh
+                        ? `${formatNumber(fundamentals.yearLow)} – ${formatNumber(fundamentals.yearHigh)}`
+                        : '—'
+                    }
+                    className="col-span-2"
+                  />
+                  <Stat
+                    label="Volumen"
+                    value={fundamentals?.volume ? formatCompact(fundamentals.volume) : '—'}
+                    hint={
+                      fundamentals?.averageVolume
+                        ? `medio ${formatCompact(fundamentals.averageVolume)}`
+                        : undefined
+                    }
+                  />
+                  <Stat
+                    label="Capitalización"
+                    value={
+                      fundamentals?.marketCap ? `USD ${formatCompact(fundamentals.marketCap)}` : '—'
+                    }
+                  />
+                  <Stat
+                    label="Objetivo consenso"
+                    value={
+                      fundamentals?.oneYearTarget ? formatPrice(fundamentals.oneYearTarget) : '—'
+                    }
+                    hint={
+                      fundamentals?.oneYearTarget && quote
+                        ? formatPercent(
+                            ((fundamentals.oneYearTarget - quote.price) / quote.price) * 100,
+                          )
+                        : undefined
+                    }
+                  />
+                  <Stat label="Asignación sugerida" value={`${pick.allocationPercent}%`} />
                 </dl>
               </Card>
 
               <Card>
                 <CardHeader
-                  title="Noticias del Research Agent"
+                  title="Noticias"
                   hint={
-                    newsState.data
-                      ? `${newsState.data.length} titulares de las últimas 48 h`
-                      : undefined
+                    newsState.data ? `${newsState.data.length} titulares recientes` : undefined
                   }
+                  divided
                 />
                 {newsState.loading ? (
                   <div className="flex flex-col gap-3" aria-busy>

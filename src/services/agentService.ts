@@ -5,6 +5,7 @@ import { NEWS_SEEDS } from '@/data/news'
 import { RUN_LOG_SEEDS, RUN_STAGES, RUN_TOTALS } from '@/data/pipelineRun'
 import { generateSparkline } from '@/data/seriesGenerator'
 import { delay, randomDelay } from './latency'
+import { apiGet } from './apiClient'
 
 /**
  * ÚNICA fuente de salidas de los agentes para la UI.
@@ -56,10 +57,22 @@ export const agentService = {
     return delay(seed ? buildPick(seed) : null, randomDelay(200, 380))
   },
 
+  /**
+   * Titulares reales del proveedor. Vienen sin sentimiento ni relevancia
+   * —eso lo evaluaría el Research Agent— así que la UI los muestra como lo que
+   * son: noticias. Si la API falla se cae a los titulares de ejemplo.
+   */
   async getNews(ticker: string): Promise<NewsItem[]> {
-    const items: NewsItem[] = NEWS_SEEDS.filter(
-      (item) => item.ticker === ticker.toUpperCase(),
-    ).map((item) => ({
+    const upper = ticker.toUpperCase()
+
+    try {
+      const live = await apiGet<NewsItem[]>('news', { symbol: upper }, { ttlMs: 300_000 })
+      if (live.length) return live
+    } catch (error) {
+      console.warn(`[agent] noticias de ${upper}: se usa el respaldo (${String(error)})`)
+    }
+
+    const items: NewsItem[] = NEWS_SEEDS.filter((item) => item.ticker === upper).map((item) => ({
       id: item.id,
       ticker: item.ticker,
       headline: item.headline,
@@ -70,7 +83,7 @@ export const agentService = {
       relevance: item.relevance,
     }))
 
-    items.sort((a, b) => b.relevance - a.relevance)
+    items.sort((a, b) => (b.relevance ?? 0) - (a.relevance ?? 0))
     return delay(items, randomDelay(240, 460))
   },
 

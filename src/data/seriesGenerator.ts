@@ -19,8 +19,10 @@ const RANGE_SPECS: Record<Timeframe, RangeSpec> = {
   '1D': { points: 78, stepMs: 5 * MINUTE, volScale: 0.16 },
   '1W': { points: 70, stepMs: HOUR, volScale: 0.35 },
   '1M': { points: 22, stepMs: DAY, volScale: 1 },
+  '3M': { points: 64, stepMs: DAY, volScale: 1 },
   '6M': { points: 130, stepMs: DAY, volScale: 1 },
   '1Y': { points: 252, stepMs: DAY, volScale: 1 },
+  '5Y': { points: 260, stepMs: 7 * DAY, volScale: 2.4 },
 }
 
 /**
