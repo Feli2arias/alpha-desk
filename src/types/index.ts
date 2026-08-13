@@ -141,10 +141,95 @@ export interface ChatMessage {
   createdAt: string
   /** Ticker si el mensaje pertenece a un chat contextual de una acción. */
   ticker?: string
+  /** 'analysis' hace que la burbuja se reemplace por el run en vivo. */
+  kind?: ChatMessageKind
+  /** Id del AnalysisRun cuando kind === 'analysis'. */
+  analysisId?: string
 }
 
 /** Contexto que se le pasa al chatService. Mañana se convierte en el system prompt. */
 export interface ChatContext {
   scope: 'global' | 'stock'
   ticker?: string
+  mode?: ChatMode
+}
+
+/* ---------------------------------------------------------------------------
+   Análisis on-demand — el usuario pide "revisá NVDA" y el pipeline corre
+   para una sola acción, en vivo, delante suyo.
+   --------------------------------------------------------------------------- */
+
+export type AnalysisStatus = 'queued' | 'researching' | 'deciding' | 'done' | 'error'
+export type StepStatus = 'pending' | 'running' | 'done'
+
+/** Un paso visible del run. El usuario ve cómo se van completando. */
+export interface AnalysisStep {
+  id: string
+  role: AgentRole
+  label: string
+  status: StepStatus
+  /** Lo que dejó el paso al terminar. Vacío mientras está pendiente. */
+  result?: string
+}
+
+/** Salida final del Decision Agent para un análisis puntual. */
+export interface Verdict {
+  ticker: string
+  signal: Signal
+  /** Convicción 0–100. */
+  score: number
+  headline: string
+  /** Razonamiento en párrafos, en orden de lectura. */
+  rationale: string[]
+  catalysts: string[]
+  risks: string[]
+  spotPrice: number
+  targetPrice: number
+  stopLoss: number
+  horizon: string
+  conviction: string
+  allocationPercent: number
+  metrics: Metric[]
+  newsCount: number
+  /** True si la acción ya venía en el Top 10 del run diario. */
+  inTopPicks: boolean
+  rank?: number
+}
+
+export interface AnalysisRun {
+  id: string
+  ticker: string
+  /** Qué etapas corrió: 'research' se detiene antes del veredicto. */
+  mode: ChatMode
+  companyName: string
+  brandColor: string
+  sector: string
+  status: AnalysisStatus
+  startedAt: string
+  finishedAt?: string
+  steps: AnalysisStep[]
+  verdict: Verdict | null
+  error?: string
+  /** Resumen del Research Agent cuando el run se detiene antes del veredicto. */
+  researchSummary?: string
+  /** Modelos usados por cada etapa — se muestran en la UI del run. */
+  researchModel: string
+  decisionModel: string
+}
+
+/* --- Chat --- */
+
+/** Modo del chat: quién responde. */
+export type ChatMode = 'auto' | 'research' | 'decision'
+
+/** Un mensaje puede ser texto o el render en vivo de un análisis. */
+export type ChatMessageKind = 'text' | 'analysis'
+
+export interface Conversation {
+  id: string
+  title: string
+  createdAt: string
+  messages: ChatMessage[]
+  /** Acción sobre la que está enfocada la conversación, si hay alguna. */
+  focusTicker?: string
 }
